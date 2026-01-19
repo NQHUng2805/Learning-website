@@ -54,11 +54,15 @@ export function useExamMonitoring() {
                 throw new Error('Video element not available');
             }
 
-            // Initialize monitoring system
-            await monitoring.initializeMonitoring(videoRef.current, handleStatusChange);
-            
+            // Camera is ready - user can start exam
             setIsCameraReady(true);
             setStatus({ status: 'ready', message: 'Camera ready' });
+            
+            // Load AI model in background (don't block camera)
+            monitoring.initializeMonitoring(videoRef.current, handleStatusChange).catch(err => {
+                console.error('Model loading error:', err);
+                setError('AI model failed to load, but camera is active');
+            });
         } catch (err) {
             console.error('Camera initialization error:', err);
             let errorMessage = 'Failed to initialize camera';

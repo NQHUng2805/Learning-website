@@ -28,6 +28,8 @@ const AuthCallback = () => {
 
                 const data = await res.json();
                 console.log("Google auth response:", data);
+                console.log("Response status:", res.status);
+                console.log("Response ok:", res.ok);
                 
                 if (res.ok && data.accessToken && data.user) {
                     localStorage.setItem("accessToken", data.accessToken);
@@ -37,10 +39,12 @@ const AuthCallback = () => {
                     navigate("/dashboard");
                 } else {
                     console.error("Auth failed:", data);
+                    alert(`Auth failed: ${JSON.stringify(data)}`);
                     navigate("/login");
                 }
             } catch (err) {
                 console.error("Login failed", err);
+                alert(`Login error: ${err.message}`);
                 navigate("/login");
             }
         };
