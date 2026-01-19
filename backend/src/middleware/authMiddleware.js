@@ -24,5 +24,11 @@ export const isAdmin = async (req, res, next) => {
     } 
     next();
 }
-
-export default { authenticateToken, isAdmin };
+export const isTeacher = async (req, res, next) => {
+    if (req.user.role === 'admin' || req.user.role === 'teacher') {
+        next();
+    } else {
+        return new Unauthorized({ message: 'You need to be a teacher to do this!', req }).send(res);
+    }
+};
+export default { authenticateToken, isAdmin, isTeacher };

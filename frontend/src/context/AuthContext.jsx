@@ -178,7 +178,9 @@ export const AuthProvider = ({ children }) => {
 
     const loginWithGoogle = async () => {
         const google_client_id = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        const redirectUri = `${import.meta.env.VITE_FRONTEND_URL}/auth/callback`;
+        
+        const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${import.meta.env.VITE_FRONTEND_URL}/auth/callback`;
+        
         const scope = encodeURIComponent("openid email profile");
         const responseType = "code";
 

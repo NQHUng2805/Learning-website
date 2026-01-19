@@ -1,0 +1,175 @@
+/* Dashboard Container */
+.dashboard-container {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8ecf1 100%);
+  min-height: 100vh;
+}
+
+/* Main Dashboard Section */
+#dashboard {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8ecf1 100%);
+}
+.course-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.course-card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  border-color: #d1d5db;
+}
+
+/* Course Title */
+.course-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+  transition: color 0.2s ease;
+}
+
+.course-card:hover .course-title {
+  color: #10b981;
+}
+
+/* Course Image */
+.course-image {
+  margin-bottom: 1rem;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.course-card:hover .course-image {
+  transform: scale(1.02);
+}
+
+/* Course Description */
+.course-description {
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+/* Course Level Badge */
+.course-level {
+  display: inline-block;
+  background: #f0fdf4;
+  color: #059669;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #d1fae5;
+}
+
+/* Quiz List */
+.quiz-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.quiz-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+/* Quiz Links */
+.quiz-link {
+  color: #0ea5e9;
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: block;
+  width: 100%;
+}
+
+.quiz-link:hover {
+  background: #f0f9ff;
+  color: #0284c7;
+  text-decoration: underline;
+}
+
+/* Toggle Buttons */
+.toggle-btn {
+  background: transparent;
+  border: none;
+  color: #0ea5e9;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.toggle-btn:hover {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+/* General Buttons */
+button {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-weight: 500;
+}
+
+button:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Modal Close Button */
+.modal-close-btn {
+  background: transparent;
+  border: 2px solid #3b82f6;
+  color: #3b82f6;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: #3b82f6;
+  color: white;
+  transform: none;
+}
+
+/* Success Modal */
+.success-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  padding: 2.5rem;
+  text-align: center;
+}
+
+.success-modal img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin: 0 auto 1.5rem;
+}
+
+/* Main Dashboard Section */
+#dashboard {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8ecf1 100%);
+}

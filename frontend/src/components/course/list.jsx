@@ -9,6 +9,7 @@ import {
     FunctionField,
     SimpleList
 } from 'react-admin';
+import { useAuth } from '../../context/AuthContext';
 
 const formatEstimatedTime = (record) => {
     const estimatedHours = record.estimatedTime;
@@ -17,6 +18,8 @@ const formatEstimatedTime = (record) => {
 
 const CourseList = () => {
     const isSmall = useMediaQuery((theme) => theme.breakpoints.down("sm"));
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
 
     return (
         <div className="w-full min-h-[calc(100vh-72px)] py-5 px-10">
@@ -39,7 +42,7 @@ const CourseList = () => {
                             sortBy="estimatedTime"
                         />
                         <EditButton />
-                        <DeleteButton />
+                        <DeleteButton disabled={(record) => !isAdmin && record.createdBy !== user?.id} />
                     </Datagrid>
                 )}
 

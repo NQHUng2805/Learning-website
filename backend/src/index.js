@@ -13,6 +13,7 @@ import courseRoutes from './routes/courseRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
+import examRoutes from './routes/examRoute.js';
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/question', questionRoutes);
+app.use('/api/exams', examRoutes);
 
 
 //Start server

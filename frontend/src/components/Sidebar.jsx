@@ -2,7 +2,8 @@ import { NavLink } from "react-router-dom";
 import logo from "../assets/HustEdu.png";
 import { sidebarNavItems } from "../constants/constants";
 import { FiLogOut } from 'react-icons/fi';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
+import './Sidebar.css'; 
 
 const Sidebar = () => {
     const { user, logout } = useAuth(); 

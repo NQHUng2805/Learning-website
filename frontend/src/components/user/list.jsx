@@ -11,9 +11,12 @@ import {
     DeleteButton,
     SimpleList
 } from 'react-admin';
+import { useAuth } from '../../context/AuthContext';
 
 const UserList = (props) => {
     const isSmall = useMediaQuery((theme) => theme.breakpoints.down("sm"));
+    const { user: currentUser } = useAuth();
+    
     return (
         <div className="w-full min-h-[calc(100vh-72px)] py-5 px-10">
             <List {...props}>
@@ -33,7 +36,7 @@ const UserList = (props) => {
                         <NumberField source="experience" />
                         <DateField source="createdAt" />
                         <EditButton basepath="/users" />
-                        <DeleteButton basepath="/users" />
+                        <DeleteButton basepath="/users" disabled={(record) => record.id === currentUser?.id} />
                     </Datagrid>
                 )}
             </List >
