@@ -14,6 +14,7 @@ const ExamPage = () => {
     const [loading, setLoading] = useState(true);
     const [exam, setExam] = useState(null);
     const [questions, setQuestions] = useState([]);
+    const [shuffledOptions, setShuffledOptions] = useState({});
     const [answers, setAnswers] = useState({});
     const [timeRemaining, setTimeRemaining] = useState(0); // in seconds
     const [attemptId, setAttemptId] = useState(null);
@@ -85,6 +86,16 @@ const ExamPage = () => {
                                 const questionResponses = await Promise.all(questionPromises);
                                 const questionData = questionResponses.map(res => res.data.question || res.data);
                                 setQuestions(questionData);
+                                
+                                // Shuffle options once when questions load
+                                const shuffled = {};
+                                questionData.forEach(question => {
+                                    const allOptions = question.incorrectOptions 
+                                        ? [...question.incorrectOptions, question.correctOption]
+                                        : [question.correctOption];
+                                    shuffled[question._id] = [...allOptions].sort(() => Math.random() - 0.5);
+                                });
+                                setShuffledOptions(shuffled);
                             } catch (err) {
                                 console.error('Error fetching questions:', err);
                                 // Try to continue with empty questions array
@@ -115,11 +126,11 @@ const ExamPage = () => {
 
     // Auto-initialize camera for proctored exams when page loads
     useEffect(() => {
-        if (exam && exam.isProctored && !examStarted && !isCameraReady && !cameraError) {
+        if (exam && exam.isProctored && !examStarted && !isCameraReady && !cameraError && videoRef.current) {
             console.log('🎥 Auto-initializing camera for proctored exam...');
             initializeCamera();
         }
-    }, [exam, examStarted, isCameraReady, cameraError, initializeCamera]);
+    }, [exam, examStarted, isCameraReady, cameraError, initializeCamera, videoRef]);
 
     // Start exam attempt
     const startExamAttempt = async () => {
@@ -487,13 +498,8 @@ const ExamPage = () => {
 
                             <div className="space-y-2 ml-8">
                                 {(() => {
-                                    // Prepare all options (correct + incorrect)
-                                    const allOptions = question.incorrectOptions 
-                                        ? [...question.incorrectOptions, question.correctOption]
-                                        : [question.correctOption];
-                                    
-                                    // Shuffle options for display (but track correct answer)
-                                    const shuffled = [...allOptions].sort(() => Math.random() - 0.5);
+                                    // Get pre-shuffled options for this question
+                                    const shuffled = shuffledOptions[question._id] || [question.correctOption];
                                     const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'].slice(0, shuffled.length);
                                     
                                     return shuffled.map((optionValue, index) => {
