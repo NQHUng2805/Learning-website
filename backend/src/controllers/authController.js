@@ -324,6 +324,10 @@ const loginWithGoogle = async (req, res) => {
             return res.status(400).json({ message: "Authorization code is required" });
         }
 
+        console.log("Google auth - Code received:", code.substring(0, 20) + "...");
+        console.log("Google auth - Redirect URI:", process.env.GOOGLE_REDIRECT_URI);
+        console.log("Google auth - Client ID:", process.env.GOOGLE_CLIENT_ID?.substring(0, 20) + "...");
+
         // Exchange code for tokens
         const tokenResponse = await axios.post("https://oauth2.googleapis.com/token", {
             code,
@@ -335,7 +339,14 @@ const loginWithGoogle = async (req, res) => {
             timeout: 10000
         });
 
-        const { id_token } = tokenResponse.data;
+        console.log("Google token exchange - Success");
+
+        const { id_token, access_token } = tokenResponse.data;
+
+        if (!id_token) {
+            console.error("No id_token in response");
+            return res.status(400).json({ message: "No id_token from Google" });
+        }
 
         const userInfoResponse = await axios.get(
             `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${id_token}`,
@@ -343,6 +354,7 @@ const loginWithGoogle = async (req, res) => {
         );
 
         const googleUser = userInfoResponse.data;
+        console.log("Google user info:", googleUser.email);
 
         if (!googleUser.email) {
             return res.status(400).json({ message: "Google account email not verified" });
@@ -363,6 +375,9 @@ const loginWithGoogle = async (req, res) => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
             });
+            console.log("New user created:", user._id);
+        } else {
+            console.log("Existing user found:", user._id);
         }
 
         const accessToken = generateAccessToken(user);
@@ -378,14 +393,24 @@ const loginWithGoogle = async (req, res) => {
         const userObj = user.toObject ? user.toObject() : user;
         const { hash_password, ...userWithoutPassword } = userObj;
 
+        console.log("Login successful for:", userWithoutPassword.email);
+
         res.json({
             user: userWithoutPassword,
             accessToken,
         });
 
     } catch (error) {
-        console.error("Google login failed:", error.response?.data || error.message);
-        res.status(500).json({ message: "Google authentication failed" });
+        console.error("❌ Google login failed:");
+        console.error("Error message:", error.message);
+        console.error("Error status:", error.response?.status);
+        console.error("Error data:", error.response?.data);
+        console.error("Full error:", error);
+        
+        res.status(500).json({ 
+            message: "Google authentication failed",
+            error: error.response?.data?.error || error.message
+        });
     }
 };
 
@@ -549,6 +574,144 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+// Get all students (role='user') - Teachers and Admins can access
+const getStudents = async (req, res) => {
+    try {
+        const { page = 1, perPage = 1000 } = req.query; // High limit for student selection
+        const skip = (page - 1) * perPage;
+        
+        const students = await User.find({ role: 'user' })
+            .select('-hash_password') // Exclude password
+            .skip(skip)
+            .limit(parseInt(perPage));
+            
+        const total = await User.countDocuments({ role: 'user' });
+        
+        const items = students.map(user => ({
+            ...user.toObject(),
+            id: user._id
+        }));
+        
+        res.status(200).json({ items, total });
+    } catch (error) {
+        console.error('Get students error:', error);
+        res.status(500).json({ message: 'Failed to fetch students' });
+    }
+};
+
+// Get single user by ID (for edit)
+const getUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const user = await getUserById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        const userData = user.toObject();
+        delete userData.hash_password;
+        
+        res.status(200).json({ 
+            ...userData, 
+            id: user._id 
+        });
+    } catch (error) {
+        console.error('Get user error:', error);
+        res.status(500).json({ message: 'Failed to fetch user' });
+    }
+};
+
+// Update user by ID
+const updateUserById = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { experience, isVerified, role } = req.body;
+        
+        const user = await getUserById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Update fields
+        if (experience !== undefined) user.experience = experience;
+        if (isVerified !== undefined) user.isVerified = isVerified;
+        if (role !== undefined) {
+            // Only admin can update role
+            if (req.user.role !== 'admin') {
+                return res.status(403).json({ message: 'Only admins can update user roles' });
+            }
+            
+            // Validate role
+            const validRoles = ['user', 'teacher', 'admin'];
+            if (!validRoles.includes(role)) {
+                return res.status(400).json({ message: 'Invalid role' });
+            }
+            
+            user.role = role;
+        }
+        
+        await user.save();
+        
+        const userData = user.toObject();
+        delete userData.hash_password;
+        
+        res.status(200).json({ 
+            user: {
+                ...userData, 
+                id: user._id 
+            }
+        });
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({ message: 'Failed to update user' });
+    }
+};
+
+// Elevate user role (Admin only)
+const elevateUserRole = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { role } = req.body;
+        const adminId = req.user.id;
+
+        // Validate role
+        const validRoles = ['user', 'teacher', 'admin'];
+        if (!role || !validRoles.includes(role)) {
+            return res.status(400).json({ 
+                message: 'Invalid role. Must be one of: user, teacher, admin' 
+            });
+        }
+
+        // Get target user
+        const targetUser = await getUserById(userId);
+        if (!targetUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Prevent self-demotion from admin
+        if (targetUser._id.toString() === adminId && role !== 'admin') {
+            return res.status(400).json({ 
+                message: 'You cannot change your own admin role' 
+            });
+        }
+
+        // Update user role
+        const updatedUser = await updateUser(userId, { role });
+
+        const userObj = updatedUser.toObject ? updatedUser.toObject() : updatedUser;
+        const { hash_password, ...userWithoutPassword } = userObj;
+
+        res.status(200).json({
+            message: `User role updated to ${role} successfully`,
+            user: userWithoutPassword
+        });
+    } catch (error) {
+        console.error('Elevate user role error:', error);
+        res.status(500).json({ message: 'Failed to update user role' });
+    }
+};
+
 export default {
     registerPending,
     register,
@@ -560,5 +723,9 @@ export default {
     updateProfile,
     changePassword,
     getExperience,
-    getAllUsers
+    getAllUsers,
+    getStudents,
+    getUser,
+    updateUserById,
+    elevateUserRole
 };

@@ -27,13 +27,16 @@ const AuthCallback = () => {
                 });
 
                 const data = await res.json();
-                if (data.accessToken && data.user) {
+                console.log("Google auth response:", data);
+                
+                if (res.ok && data.accessToken && data.user) {
                     localStorage.setItem("accessToken", data.accessToken);
                     setToken(data.accessToken);
                     setUser(data.user);
                     sessionStorage.removeItem("oauthState");
                     navigate("/dashboard");
                 } else {
+                    console.error("Auth failed:", data);
                     navigate("/login");
                 }
             } catch (err) {

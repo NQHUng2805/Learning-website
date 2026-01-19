@@ -17,6 +17,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import Dashboard from './pages/Dashboard';
 import QuizPage from './pages/QuizPage';
+import ExamPage from './pages/ExamPage';
 import Dictionary from './pages/Dictionary';
 import Leaderboards from './pages/Leaderboards';
 import InvalidRouteHandler from './pages/InvalidRouteHandler';
@@ -26,6 +27,7 @@ function AppContent() {
   const { user, loading } = useAuth();
   const location = useLocation();
   const quizLocation = location.pathname.includes('/quiz');
+  const examLocation = location.pathname.includes('/exam');
   const { pathname } = location;
 
   useEffect(() => {
@@ -45,12 +47,12 @@ function AppContent() {
 
   return (
     <>
-      {loggedIn && !quizLocation && userRole === 'user' && <Sidebar />}
+      {loggedIn && !quizLocation && !examLocation && userRole === 'user' && <Sidebar />}
       
       <div
         className={`overflow-x-hidden overflow-y-auto flex flex-col ${
           loggedIn && userRole === 'user' 
-            ? (quizLocation ? '' : 'mb-20 sm:mb-0 sm:ms-[88px] xl:ms-[300px]') 
+            ? (quizLocation || examLocation ? '' : 'mb-20 sm:mb-0 sm:ms-[88px] xl:ms-[300px]') 
             : ''
         }`}
       >
@@ -67,8 +69,8 @@ function AppContent() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-            {/* User Routes - Only show if not admin */}
-            {userRole !== 'admin' && (
+            {/* User Routes - Only show if regular user (not admin or teacher) */}
+            {userRole === 'user' && (
               <>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/leaderboards" element={<Leaderboards />} />
@@ -77,11 +79,14 @@ function AppContent() {
                 
                 {/* Quiz Routes - Simplified for now */}
                 <Route path="/quiz/*" element={<QuizPage />} />
+                
+                {/* Exam Routes */}
+                <Route path="/exam/:examId" element={<ExamPage />} />
               </>
             )}
 
-            {/* Admin Routes - Protected */}
-            {loggedIn && userRole === 'admin' && (
+            {/* Admin & Teacher Routes - Protected */}
+            {loggedIn && (userRole === 'admin' || userRole === 'teacher') && (
               <Route path="/adminPanel/*" element={<AdminPanel />} />
             )}
 

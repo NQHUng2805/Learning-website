@@ -113,6 +113,17 @@ const AuthPage = ({ mode }) => {
                             requiresCaptcha={showRecaptcha}
                         />
                     )}
+
+                    {showRecaptcha && (
+                        <div className="captcha-container">
+                            <ReCAPTCHA
+                                ref={recaptchaRef} // Add ref
+                                sitekey={RECAPTCHA_KEY}
+                                onChange={handleCaptchaChange}
+                            />
+                        </div>
+                    )}
+
                     <div className="divider">
                         <span>or continue with</span>
                     </div>
@@ -124,16 +135,6 @@ const AuthPage = ({ mode }) => {
                             Google
                         </button>
                     </div>
-
-                    {showRecaptcha && (
-                        <div className="captcha-container">
-                            <ReCAPTCHA
-                                ref={recaptchaRef} // Add ref
-                                sitekey={RECAPTCHA_KEY}
-                                onChange={handleCaptchaChange}
-                            />
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

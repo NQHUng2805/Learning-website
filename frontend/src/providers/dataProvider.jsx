@@ -77,7 +77,8 @@ const getEndpoint = (resource) => {
         'users': 'auth/users',
         'course': 'courses',
         'quiz': 'quiz',
-        'question': 'question'
+        'question': 'question',
+        'exam': 'exams'
     };
     return resourceMap[resource] || resource;
 };
@@ -155,6 +156,21 @@ export default {
         try {
             const { id, data } = params;
             const endpoint = getEndpoint(resource);
+            
+            // Special handling for users - use direct REST style
+            if (resource === 'users') {
+                const response = await axiosInstance.put(`/auth/users/${id}`, data);
+                return { data: { ...response.data.user, id: response.data.user._id || id } };
+            }
+
+            // Exams use REST style: PUT /exams/:examId (backend route uses :examId parameter)
+            if (resource === 'exam') {
+                const response = await axiosInstance.put(`/${endpoint}/${id}`, data);
+                // Backend returns { message, exam } - extract exam object
+                return { data: { ...response.data.exam || response.data, id } };
+            }
+            
+            // Default update endpoint
             const response = await axiosInstance.put(`/${endpoint}/edit/${id}`, data);
 
             return { data: { ...response.data, id: response.data._id } };
@@ -168,7 +184,12 @@ export default {
         try {
             const { id } = params;
             const endpoint = getEndpoint(resource);
-            await axiosInstance.delete(`/${endpoint}/delete/${id}`);
+            // Exams follow REST style without /delete
+            if (resource === 'exam') {
+                await axiosInstance.delete(`/${endpoint}/${id}`);
+            } else {
+                await axiosInstance.delete(`/${endpoint}/delete/${id}`);
+            }
             
             return { data: { id } };
         } catch (error) {
