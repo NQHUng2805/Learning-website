@@ -5,6 +5,7 @@ import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { BadRequest, NotFound, Forbidden } from '../core/error.response.js';
 import crypto from 'crypto';
+import { sendExamAssignmentEmail } from '../utils/emailNotification.js';
 import {
     validateExamExists,
     validateExamWithQuestions,
@@ -504,10 +505,32 @@ export const assignExamToStudents = async (req, res, next) => {
 
         await Notification.insertMany(notifications);
 
+        // Send email notifications to students
+        let emailsSent = 0;
+        for (const student of students) {
+            try {
+                const emailSent = await sendExamAssignmentEmail(
+                    student.email,
+                    student.username,
+                    exam.title,
+                    exam.duration,
+                    exam.startTime,
+                    exam.endTime,
+                    exam.isProctored
+                );
+                if (emailSent) emailsSent++;
+            } catch (error) {
+                console.error(`Failed to send email to ${student.email}:`, error);
+            }
+        }
+
+        console.log(`📧 Exam notifications: ${studentIds.length} in-app, ${emailsSent} emails sent`);
+
         return res.status(200).json({
             message: `Exam assigned to ${studentIds.length} student(s) successfully`,
             exam,
-            notificationsSent: studentIds.length
+            notificationsSent: studentIds.length,
+            emailsSent
         });
     } catch (err) {
         next(err);
