@@ -2,16 +2,33 @@ import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 
 let model = null;
+let modelLoadPromise = null;
 
 /**
  * Loads the emotion detection model
  * @returns {Promise<void>}
  */
 export async function loadEmotionModel() {
-  if (!model) {
-    model = await tf.loadLayersModel('/web_model/model.json');
+  if (!model && !modelLoadPromise) {
+    modelLoadPromise = tf.loadLayersModel('/web_model/model.json')
+      .then(loadedModel => {
+        model = loadedModel;
+        console.log('✅ AI emotion model loaded');
+        return model;
+      })
+      .catch(err => {
+        console.error('❌ Failed to load AI model:', err);
+        modelLoadPromise = null;
+        throw err;
+      });
   }
+  if (modelLoadPromise) await modelLoadPromise;
   return model;
+}
+
+// Auto-preload model when module is imported
+if (typeof window !== 'undefined') {
+  loadEmotionModel().catch(() => {});
 }
 
 /**

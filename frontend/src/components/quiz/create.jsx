@@ -4,6 +4,7 @@ import {
     TextInput,
     required,
     ReferenceArrayInput,
+    SelectArrayInput,
 } from "react-admin";
 
 const QuizCreate = () => {
@@ -13,6 +14,9 @@ const QuizCreate = () => {
                 <SimpleForm>
                     <TextInput source="title" validate={[required()]} label="Title" />
                     <TextInput source="description" validate={required()} label="Description" />
+                    <ReferenceArrayInput source="question" reference="question" label="Select Questions">
+                        <SelectArrayInput optionText="question" />
+                    </ReferenceArrayInput>
                 </SimpleForm>
             </Create>
         </div>
