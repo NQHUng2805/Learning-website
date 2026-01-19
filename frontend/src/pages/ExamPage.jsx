@@ -113,11 +113,21 @@ const ExamPage = () => {
         fetchExam();
     }, [examId, navigate]);
 
+    // Auto-initialize camera for proctored exams when page loads
+    useEffect(() => {
+        if (exam && exam.isProctored && !examStarted && !isCameraReady && !cameraError) {
+            console.log('🎥 Auto-initializing camera for proctored exam...');
+            initializeCamera();
+        }
+    }, [exam, examStarted, isCameraReady, cameraError, initializeCamera]);
+
     // Start exam attempt
     const startExamAttempt = async () => {
         try {
-            // Initialize camera first
-            await initializeCamera();
+            // Initialize camera first if not already done
+            if (exam.isProctored && !isCameraReady) {
+                await initializeCamera();
+            }
             
             // Start exam attempt
             const response = await axios.post(
