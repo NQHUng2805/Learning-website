@@ -7,28 +7,42 @@ import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import Typography from '@mui/material/Typography';
 import success from '../assets/success.png';
 import { useAuth } from '../context/AuthContext';
+import './Dashboard.css';
 
 const Dashboard = () => {
     const [expandedCourses, setExpandedCourses] = useState([]);
+    const [expandedExams, setExpandedExams] = useState([]);
     const { user, accessToken } = useAuth(); 
     const [popup, setPopup] = useState(false);
     const [courses, setCourses] = useState([]);
+    const [exams, setExams] = useState([]);
 
     useEffect(() => {
-        const fetchCourses = async () => {
+        const fetchData = async () => {
             try {
-                
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/courses/all`, { 
+                // Fetch courses
+                const courseResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/courses/all`, { 
                     withCredentials: true,
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
                     }
                 });
-                if (response.status === 200) {
-                    setCourses(response.data.items || response.data.courses || response.data || []);
+                if (courseResponse.status === 200) {
+                    setCourses(courseResponse.data.items || courseResponse.data.courses || courseResponse.data || []);
+                }
+
+                // Fetch exams
+                const examResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/exams`, { 
+                    withCredentials: true,
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                if (examResponse.status === 200) {
+                    setExams(examResponse.data.items || examResponse.data.exams || []);
                 }
             } catch (error) {
-                console.error('Error fetching courses:', error);
+                console.error('Error fetching data:', error);
                 console.error('Error response:', error.response?.data);
                 if (error.response?.status === 401) {
                     localStorage.removeItem('accessToken');
@@ -38,7 +52,7 @@ const Dashboard = () => {
         };
         
         if (user && accessToken) {
-            fetchCourses();
+            fetchData();
         }
     }, [user, accessToken]);
 
@@ -47,6 +61,14 @@ const Dashboard = () => {
             setExpandedCourses(expandedCourses.filter(id => id !== courseId));
         } else {
             setExpandedCourses([...expandedCourses, courseId]);
+        }
+    };
+
+    const toggleExamVisibility = (courseId) => {
+        if (expandedExams.includes(courseId)) {
+            setExpandedExams(expandedExams.filter(id => id !== courseId));
+        } else {
+            setExpandedExams([...expandedExams, courseId]);
         }
     };
 
@@ -61,6 +83,32 @@ const Dashboard = () => {
         
         console.log('Storing quiz data:', quizData); 
         localStorage.setItem('currentQuiz', JSON.stringify(quizData));
+    };
+
+    // Group exams by course
+    const getExamsForCourse = (courseId) => {
+        return exams.filter(exam => {
+            const examCourseId = typeof exam.course === 'object' ? exam.course._id : exam.course;
+            return examCourseId === courseId;
+        });
+    };
+
+    const isExamAvailable = (exam) => {
+        const now = new Date();
+        if (exam.startTime && new Date(exam.startTime) > now) return false;
+        if (exam.endTime && new Date(exam.endTime) < now) return false;
+        return true;
+    };
+
+    const getExamStatus = (exam) => {
+        const now = new Date();
+        if (exam.startTime && new Date(exam.startTime) > now) {
+            return { text: 'Not Started', color: '#999' };
+        }
+        if (exam.endTime && new Date(exam.endTime) < now) {
+            return { text: 'Ended', color: '#e74c3c' };
+        }
+        return { text: 'Active', color: '#27ae60' };
     };
 
     if (!user) {
@@ -95,55 +143,149 @@ const Dashboard = () => {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
-                {courses.map(course => (
-                    <div key={course._id} className="p-6 bg-white rounded-lg shadow-md">
-                        {course.image && (
-                            <img src={course.image} alt={course.courseTitle} className="mb-4 w-full h-auto" />
-                        )}
-                        <h2 className="text-3xl font-bold mb-2">{course.courseTitle}</h2>
-                        <div className="flex justify-between items-center mb-4">
-                            <p className="text-lg text-gray-700 mr-1">{course.description}</p>
-                            <span className="text-lg text-gray-500 ml-1">{course.level}</span>
-                        </div>
+                {courses.map(course => {
+                    const courseExams = getExamsForCourse(course._id);
+                    const hasQuizzes = course.quiz && course.quiz.length > 0;
+                    const hasExams = courseExams.length > 0;
+                    
+                    return (
+                        <div
+                            key={course._id}
+                            className="course-card"
+                        >
+                            {course.image && (
+                                <img src={course.image} alt={course.courseTitle} className="course-image" />
+                            )}
+                            <div className="p-6">
+                                <h2 className="course-title">{course.courseTitle}</h2>
+                                <div className="flex justify-between items-center mb-4">
+                                    <p className="course-description">{course.description}</p>
+                                    <span className="course-level">{course.level}</span>
+                                </div>
 
-                        {expandedCourses.includes(course._id) ? (
-                            <div>
-                                {course.quiz?.map((quiz, index) => {
-                                    const quizId = typeof quiz === 'object' ? quiz._id : quiz;
-                                    const quizTitle = typeof quiz === 'object' ? quiz.title : `Quiz ${index + 1}`;
-                                    
-                                    return (
-                                        <li 
-                                            key={`${course._id}-${quizId}-${index}`}
-                                            className="w-full flex justify-between items-center list-none"
-                                        >
-                                            <Link
-                                                to={`/quiz/${encodeURIComponent(course.courseTitle)}/${quizId}`}
-                                                className="text-blue-500 text-lg hover:bg-slate-100 w-full p-2 block"
-                                                onClick={() => handleQuizClick(course.courseTitle, quiz, quizTitle)}
+                                {/* QUIZZES SECTION */}
+                                {hasQuizzes && (
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="font-semibold text-blue-600">📚 Quizzes</h3>
+                                        </div>
+                                        {expandedCourses.includes(course._id) ? (
+                                            <div>
+                                                <ul className="quiz-list">
+                                                    {course.quiz?.map((quiz, index) => {
+                                                        const quizId = typeof quiz === 'object' ? quiz._id : quiz;
+                                                        const quizTitle = typeof quiz === 'object' ? quiz.title : `Quiz ${index + 1}`;
+                                                        
+                                                        return (
+                                                            <li 
+                                                                key={`${course._id}-${quizId}-${index}`}
+                                                                className="quiz-item"
+                                                            >
+                                                                <Link
+                                                                    to={`/quiz/${encodeURIComponent(course.courseTitle)}/${quizId}`}
+                                                                    className="quiz-link"
+                                                                    onClick={() => handleQuizClick(course.courseTitle, quiz, quizTitle)}
+                                                                >
+                                                                    {quizTitle}
+                                                                </Link>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                                <button 
+                                                    onClick={() => toggleQuizVisibility(course._id)} 
+                                                    className="toggle-btn"
+                                                >
+                                                    Hide Quizzes <ArrowDropUpIcon />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={() => toggleQuizVisibility(course._id)} 
+                                                className="toggle-btn"
                                             >
-                                                {quizTitle}
-                                            </Link>
-                                        </li>
-                                    );
-                                })}
-                                <button 
-                                    onClick={() => toggleQuizVisibility(course._id)} 
-                                    className="text-blue-500 hover:underline mt-2"
-                                >
-                                    <ArrowDropUpIcon />
-                                </button>
+                                                Show Quizzes <ArrowDropDownIcon />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* EXAMS SECTION */}
+                                {hasExams && (
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="font-semibold text-red-600">📝 Exams</h3>
+                                        </div>
+                                        {expandedExams.includes(course._id) ? (
+                                            <div>
+                                                <ul className="space-y-2">
+                                                    {courseExams.map((exam) => {
+                                                        const status = getExamStatus(exam);
+                                                        const available = isExamAvailable(exam);
+                                                        
+                                                        return (
+                                                            <li 
+                                                                key={exam._id}
+                                                                className="border border-gray-200 rounded p-3 hover:bg-gray-50"
+                                                            >
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div className="flex-1">
+                                                                        <h4 className="font-semibold">{exam.title}</h4>
+                                                                        <p className="text-sm text-gray-600">{exam.description}</p>
+                                                                    </div>
+                                                                    <span 
+                                                                        className="text-xs px-2 py-1 rounded"
+                                                                        style={{ backgroundColor: status.color + '20', color: status.color }}
+                                                                    >
+                                                                        {status.text}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 mb-2">
+                                                                    <div>⏱️ Duration: {exam.duration} minutes</div>
+                                                                    <div>📷 Camera: {exam.isProctored ? 'Required' : 'Not Required'}</div>
+                                                                    {exam.startTime && (
+                                                                        <div>📅 Starts: {new Date(exam.startTime).toLocaleString()}</div>
+                                                                    )}
+                                                                    {exam.endTime && (
+                                                                        <div>📅 Ends: {new Date(exam.endTime).toLocaleString()}</div>
+                                                                    )}
+                                                                </div>
+                                                                <Link
+                                                                    to={`/exam/${exam._id}`}
+                                                                    className={`inline-block text-center w-full py-2 px-4 rounded font-semibold transition-colors ${
+                                                                        available 
+                                                                            ? 'bg-red-600 hover:bg-red-700 text-white' 
+                                                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                                    }`}
+                                                                    onClick={(e) => !available && e.preventDefault()}
+                                                                >
+                                                                    {available ? 'Start Exam' : 'Not Available'}
+                                                                </Link>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                                <button 
+                                                    onClick={() => toggleExamVisibility(course._id)} 
+                                                    className="toggle-btn mt-2"
+                                                >
+                                                    Hide Exams <ArrowDropUpIcon />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={() => toggleExamVisibility(course._id)} 
+                                                className="toggle-btn"
+                                            >
+                                                Show Exams ({courseExams.length}) <ArrowDropDownIcon />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <button 
-                                onClick={() => toggleQuizVisibility(course._id)} 
-                                className="text-blue-500 hover:underline"
-                            >
-                                <ArrowDropDownIcon />
-                            </button>
-                        )}
-                    </div>
-                ))}
+                        </div>
+                    );
+                })}
             </div>
         </section>
     );

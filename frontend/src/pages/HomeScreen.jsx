@@ -11,7 +11,7 @@ const HomeScreen = () => {
             return <Navigate to="/dashboard" />;
         }
     
-        if (user.role === 'admin') {
+        if (user.role === 'admin' || user.role === 'teacher') {
             return <Navigate to="/adminPanel" />;
         }
     }

@@ -36,7 +36,7 @@ const Login = ({ captchaToken, onLoginFailure, onLoginSuccess, requiresCaptcha }
                 onLoginSuccess?.();
                 
                 // Check user role and navigate accordingly
-                if (result.user && result.user.role === "admin") {
+                if (result.user && (result.user.role === "admin" || result.user.role === "teacher")) {
                     navigate("/adminPanel"); 
                 } else {
                     navigate("/dashboard"); 
