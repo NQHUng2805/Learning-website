@@ -19,11 +19,17 @@ class ErrorResponse extends Error {
         this.req = req;
         this.logLevel = logLevel;
 
-        const urlRequest = this.req.headers.referer || '-'
-        const ip = this.req.headers['x-forwarded-for'] || this.req.connection.remoteAddress;
-        // Log the error message including IP, method, URL, status code, and message
-        const logMessage = `${ip} - - "${this.req.method} ${this.req.originalUrl} HTTP/${this.req.httpVersion}" ${this.statusCode} - "${urlRequest}" "${this.req.headers['user-agent']}" "${this.message}"`;
-        logger[this.logLevel](logMessage);
+        // Only log if req is available
+        if (this.req && this.req.headers) {
+            const urlRequest = this.req.headers.referer || '-'
+            const ip = this.req.headers['x-forwarded-for'] || this.req.connection.remoteAddress;
+            // Log the error message including IP, method, URL, status code, and message
+            const logMessage = `${ip} - - "${this.req.method} ${this.req.originalUrl} HTTP/${this.req.httpVersion}" ${this.statusCode} - "${urlRequest}" "${this.req.headers['user-agent']}" "${this.message}"`;
+            logger[this.logLevel](logMessage);
+        } else {
+            // Fallback logging without request details
+            logger[this.logLevel](`${this.statusCode} - ${this.message}`);
+        }
     }
 
     send(res) {
